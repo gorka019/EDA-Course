@@ -1,0 +1,478 @@
+Udacity Course: EDA - Exploratory Data Analysis
+Lesson 3: Explore One Variable
+========================================================
+
+Elegir la direccion el workspace:
+```{r}
+library(ggplot2)
+library(ggthemes)
+library(gridExtra)
+
+getwd()
+list.files()
+setwd('C:/Users/Gorka/Dropbox/Proyecto_MSI/WORKSPACE/EDA_Course_Materials/lesson3')
+```
+
+Si pongo read.csv('pseudo_facebook.tsv', sep = '\t') o read.delim('pseudo_facebook.tsv') es lo mismo:
+```{r}
+pf = read.csv('pseudo_facebook.tsv', sep = '\t')
+pf2 = read.delim('pseudo_facebook.tsv') # Sinmas, usare la variable "pf"
+```
+
+Ver el nombre de las variables del dataset:
+```{r}
+names(pf)
+```
+
+## Histograma del cumpleaños de los usuarios de facebook
+```{r}
+## Libreria para graficos:
+library(ggplot2)
+## Libreria para cambiar los temas del grafico:
+## @source: https://github.com/jrnold/ggthemes#examples 
+library(ggthemes)
+theme_set(theme_minimal(14))
+
+## Ver que variables hay, para poder elegir la que mas me conviene.
+names(pf)
+
+qplot(x = dob_day, data = pf) # dob_day = data birthday
+qplot(x = dob_day, data = pf) + scale_x_discrete(breaks=1:31)  # 31 = days of the month.
+```
+
+Otra forma para crear un histograma:
+```{r}
+ggplot(aes(x = dob_day), data = pf) + geom_histogram() + scale_x_discrete(breaks = 1:31)
+```
+
+## Dividir los datos del dataset en diferentes histogramas
+Dividir el histograma en 12 cachos. A la funcion qplot le añadimos un nivel 
+más: facet_wrap. Coge una fórmula (~) y despues ponemos la variable en la que
+queremos dividir los datos (dob_month). 
+
+```{r fig.width=7, fig.height=6}
+qplot(x = dob_day, data = pf) + scale_x_discrete(breaks=1:31) + facet_wrap(~dob_month, ncol=3)
+```
+
+Sintaxis equivalente con ggplot:
+```{r}
+ggplot(data = pf, aes(x = dob_day)) + geom_histogram() + scale_x_discrete(breaks = 1:31) + 
+  facet_wrap(~dob_month)
+```
+
+Cuando quieres dividir los datos respecto a más variables, se usa:
+facet_grid(vertical~horizontal)
+
+## Contar Amigos de facebook y escalar grafico:
+```{r}
+qplot(x = friend_count, data = pf) #el resultado no es bueno
+
+##Con xlim, metemos un vector donde le decimos la posición inicial y final.
+qplot(x = friend_count, data = pf, xlim = c(0,1000))
+
+## Otra forma de hacer lo mismo
+qplot(x = friend_count, data = pf) + scale_x_continuous(limits = c(0,1000))
+```
+
+La misma sintaxis para ggplot:
+```{r}
+ggplot(aes(x = friend_count), data = pf) + 
+  geom_histogram() + scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50))
+```
+
+## Ajustar el binwidht del plot:
+```{r}
+qplot(x = friend_count, data = pf, binwidth = 25) + 
+  scale_x_continuous(limits = c(0,1000), breaks = seq(0, 1000, 50))
+```
+
+## Divide the friend_count data in male and female
+```{r}
+qplot(x = friend_count, data = pf, binwidth = 25) + 
+  scale_x_continuous(limits = c(0,1000), breaks = seq(0, 1000, 50)) +
+  facet_wrap(~gender)
+
+## In the alternate solution below, the period or dot in the formula for facet_grid()    represents all of the other variables in the data set. Essentially, this notation splits up the data by gender and produces three histograms, each having their own row. 
+qplot(x = friend_count, data = pf) + facet_grid(gender ~ .)
+
+## equivalent in ggplot format:
+ggplot(aes(x = friend_count), data = pf) + 
+  geom_histogram() + 
+  scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50)) + 
+  facet_wrap(~gender)
+```
+
+Para quitar el plot NA que sale:
+```{r}
+qplot(x = friend_count, data = subset(pf, !is.na(gender)), binwidth = 25) + 
+  scale_x_continuous(limits = c(0,1000), breaks = seq(0, 1000, 50)) +
+  facet_wrap(~gender)
+
+## equivalent in ggplot format:
+ggplot(aes(x = friend_count), data = subset(pf, !is.na(gender)) + 
+  geom_histogram() + 
+  scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50)) + 
+  facet_wrap(~gender)
+```
+
+## Conocer la cantidad de una variable:
+Para saber que cantidad hay más: mujeres o hombres.
+```{r}
+table(pf$gender)
+
+## by(variable, categorical variable "variable que contiene los segmentos que queremos", función)
+by(pf$friend_count, pf$gender, summary)
+```
+> by(pf$friend_count, pf$gender, summary)
+pf$gender: female
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0      37      96     242     244    4923 
+------------------------------------------------------------------------ 
+pf$gender: male
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0      27      74     165     182    4917 
+
+El valor de "Median" es mejor que "Mean" porque es una estadística más robusta. It marcs the halfway point for all data points. We can report a reliable location of the center of our distribution.
+
+
+
+## Cuantos días alguien ha usado facebook. Tenure ~= permanencia/tendencia...
+```{r}
+## Estoy midiendo el uso en días.
+## The parameter color determines the color outline of objects in a plot.Las lineas que bordean la barra.
+## The parameter fill determines the color of the area inside objects in a plot.
+## You might notice how the color black and the hex code color of #099DD9 (a shade of blue) are wrapped inside of I(). The I() functions stand for 'as is' and tells qplot to use them as colors. 
+qplot(x = tenure, data = pf, binwidth = 30, 
+      color = I('black'), fill = I('#099DD9') )
+```
+Colores en hexadecimal:
+http://en.wikipedia.org/wiki/Web_colors
+
+
+Equivalente con la sintaxis ggplot:
+```{r}
+ggplot(aes(x = tenure), data = pf) + 
+   geom_histogram(binwidth = 30, color = 'black', fill = '#099DD9')
+```
+
+### Crear un histograma de Tenure por años, en vez de por días.
+Establecer un valor apropiado a binwidth .
+```{r}
+## Calcular el valor para un año:
+## 365dias/365 = 1año --> tenure/365
+## ahora el eje 'x' simboliza años y el eje 'y' cantidad.
+qplot(x = tenure/365, data = pf, binwidth = 0.25,
+      xlab = 'Number of years using Facebook',
+      ylab = 'Number of users in sample',
+      color = I('black'), fill = I('#808000') ) +
+  scale_x_continuous(breaks = seq(1, 7, 1), limits = c(0, 7) )
+
+## tambien vale:
+qplot(x = tenure/365, data = pf, binwidth = 0.25,
+      color = I('black'), fill = I('#808000') ) +
+  scale_x_continuous(breaks = seq(1, 7, 1), limits = c(0, 7) ) + 
+  xlab('Number of years using Facebook') +
+  ylab('Number of users in sample')
+```
+
+Sintaxis equivalente para ggplot:
+```{r}
+ggplot(aes(x = tenure / 365), data = pf) + 
+  geom_histogram(color = 'black', fill = '#F79420') + 
+  scale_x_continuous(breaks = seq(1, 7, 1), limits = c(0, 7) ) + 
+  xlab('Number of years using Facebook') + 
+  ylab('Number of users in sample')
+```
+
+## Histogram of facebook users based on their age:
+```{r}
+pf = subset(pf, select = -subset(pf, age >= 90) )
+qplot(x = age, data = pf, binwidth = 1,
+      color = I('black'), fill = I('#800080') ) + 
+  scale_x_continuous(breaks = seq(0, 113, 5) )  #pongo hasta 113, xq mediante summary(pf$age) obtengo que la edad maxima que aparece es 113.
+
+## En la grafica puede verse como algunos usuarios de facebook "tienen" alrededor de años. Por lo que se deduce que han mentido al insertar la edad. Para saber kienes han mentido:
+pf[pf$age >= 90, ]
+
+## Eliminar esos usuarios de facebook de la grafica xq son datos inservibles:
+## 1. Obtener en que posición (indice) del data frame originalestan.
+liers = which(pf$age >= 90)
+## 2. Actualizar el valor del data set.
+pf = pf[-liers, ]
+## 3. Plotear valores ,as lógicos.
+pf = subset(pf, select = -subset(pf, age >= 90) )
+qplot(x = age, data = pf, binwidth = 1,
+      color = I('black'), fill = I('#800080') ) + 
+  scale_x_continuous(breaks = seq(0, 113, 5) )
+```
+
+Equivalente con ggplot:
+```{r}
+ggplot(aes(x = age), data = pf) + 
+  geom_histogram(binwidth = 1, color = 'black', fill = '#F79420') +
+  scale_x_continuous(breaks = seq(0, 113, 5) )
+  
+```
+
+# Transforming Data:
+====================
+En muchos casos, para ver una mejor distribucion de los datos, los datos se convierten a escala logaritmida o raiz cuadrada (sqrt).
+
+
+```{r}
+qplot(x = friend_count, data = pf)
+
+summary(pf$friend_count)
+
+summary(log10(pf$friend_count + 1))
+
+summary(sqrt(pf$friend_count))
+```
+
+
+## Crear una salida de plot, con tres diferentes graficos, aplicando el cambio a escala logaritmica y sqrt.
+```{r}
+p1 = qplot(x = friend_count, data = pf)
+p2 = qplot(x = log10(friend_count + 1), data = pf)  ## el 1 hay que poner por noseke movidas que sale infinito al hacer algoritmo o algo asi...
+p3 = qplot(x = sqrt(friend_count), data = pf)
+grid.arrange(p1, p2, p3, ncol = 1)
+
+
+## con ggplot:
+plot1 = ggplot(aes(x = friend_count), data = pf) +
+  geom_histogram()
+
+plot2 = plot1 + scale_x_log10()
+plot3 = plot1 + scale_x_sqrt()
+
+grid.arrange(plot1, plot2, plot3, ncol=1)
+```
+
+## Frequency Polygons.
+Son similares a los histogramas, pero dibujan una curva conectando los "counts" del histograma.
+Esto nos permite ver la forma y los picos de nuestra distribución (distribution) de datos en más detalle.
+
+```{r}
+qplot(x = friend_count, data = subset(pf, !is.na(gender)), 
+      binwidth = 10) +
+  scale_x_continuous(lim = c(0,1000), breaks = seq(0, 1000, 50) ) + 
+  facet_wrap(~gender) 
+
+## Quien tiene mas amigos en facebook, los chicos o las chicas?
+## Utilizar Frequency polygon para unir los dos graficos:
+qplot(x = friend_count, data = subset(pf, !is.na(gender)), 
+      binwidth = 10, geom = 'freqpoly', color = gender) +  
+  scale_x_continuous(lim = c(0,1000), breaks = seq(0, 1000, 50) )  
+#color is indicating which freq polygon I´m on.
+
+## Todavia no se puede contestar bien a la pregunta.
+## Cambiar el eje 'y' para mostrar proporciones en vez de contajes en crudo (raw counts).
+qplot(x = friend_count, y = ..count../sum(..count..), 
+      data = subset(pf, !is.na(gender)), 
+      xlab = 'Friend Count',
+      ylab = 'Proportion of Users with that friend count',
+      binwidth = 10, geom = 'freqpoly', color = gender) +  
+  scale_x_continuous(lim = c(0,1000), breaks = seq(0, 1000, 50) )
+
+## Parece que los chicos tienen mas amigos en facebook que las chicas. Busca en el grafico donde superan las chicas en cantidad de amigos:
+qplot(x = friend_count, y = ..count../sum(..count..), 
+      data = subset(pf, !is.na(gender)), 
+      xlab = 'Friend Count',
+      ylab = 'Proportion of Users with that friend count',
+      binwidth = 10, geom = 'freqpoly', color = gender) +  
+  scale_x_continuous(lim = c(300,1000), breaks = seq(10, 1000, 50) )
+
+```
+
+Sintaxis del Frequency Polygon con ggplot:
+```{r}
+ggplot(aes(x = friend_count, y = ..count../sum(..count..)), data = subset(pf, !is.na(gender)))+
+  geom_freqpoly(aes(color = gender)) + 
+  scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50)) + 
+  xlab('Friend Count') + 
+  ylab('Percentage of users with that friend count')
+```
+
+## Utilizar Frequency Polygon para determinar que genero (masculino/femenino) realiza mas "likes" en facebook (variable: www_likes).
+Recordar, que dentro de la variable "gender" hay algunos datos NA (no pertenecen ni a masculino ni femenino) asi que hay que usar: !is.na(gender) para eliminar esos datos.
+
+```{r}
+ggplot(aes(x = www_likes), data = subset(pf, !is.na(gender)) ) +
+  geom_freqpoly(aes(color = gender)) + 
+  scale_x_continuous(limits = c(0, 800), breaks = seq(0, 1000, 100) )
+## Con el anterior grafico, parece que las muejeres le dan mas a "like", pero no vemos que es lo que ocurre en la cola del grafico.
+
+## otro grafico mejor:
+ggplot(aes(x = www_likes), data = subset(pf, !is.na(gender)) ) +
+  geom_freqpoly(aes(color = gender) ) + 
+  scale_x_sqrt()
+
+## todavia mejor:
+ggplot(aes(x = www_likes), data = subset(pf, !is.na(gender)) ) +
+  geom_freqpoly(aes(color = gender) ) + 
+  scale_x_log10()
+```
+
+Con ese ultimo grafico, puede apreciarse como llega el punto en el que los hombres superan a las mujeres. Como saber entonces quien le da mas veces a "like"?
+```{r}
+## Whats the ww_like count for males? ## Which gender has more www_likes?
+by(pf$www_likes, pf$gender, sum)
+# pf$gender: female
+# [1] 3507665
+# --------------------------------------------------------------------------- 
+# pf$gender: male
+# [1] 1430175
+
+```
+
+
+## Box Plots
+Otra forma de visualizar la distribucion de los datos.
+
+Anteriormente dividiamos asi los datos, en dos histogramas diferentes:
+```{r}
+qplot(x = friend_count, data = subset(pf, !is.na(gender)), binwidth = 25) +
+  scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50) ) +
+  facet_wrap(~gender)
+```
+
+Ahoa vamos a usar Box Plots:
+```{r}
+## eje 'y' sera el friend count.
+## eje 'x' es la categorical variable: male or female.
+qplot(x = gender, y = friend_count, 
+      data = subset(pf, !is.na(gender) ), 
+      geom = 'boxplot')
+```
+
+En el resultado, salen muchos puntos outlier (fuera de los limites). Hay que ajustar el codigo.
+```{r}
+qplot(x = gender, y = friend_count, 
+      data = subset(pf, !is.na(gender) ), 
+      geom = 'boxplot') + 
+  scale_y_continuous(limits = c(0, 1000) )
+
+## otra forma:
+qplot(x = gender, y = friend_count, 
+      data = subset(pf, !is.na(gender) ), 
+      geom = 'boxplot', ylim = c(0, 1000) ) 
+
+## utilizando los dos metodos anteriores, eliminamos datos, por lo que no es unas solucion muy buena. Es mejor utilizar "cord Cartesian layer"
+```
+
+Utilizando "cord Cartesian layer":
+```{r}
+qplot(x = gender, y = friend_count, 
+      data = subset(pf, !is.na(gender) ), 
+      geom = 'boxplot') + 
+  coord_cartesian(ylim = c(0, 250) )
+
+by(pf$friend_count, pf$gender, summary)
+```
+
+On average, who initiated more friendships in our sample?
+```{r}
+qplot(x = gender, y = friendships_initiated, 
+      data = subset(pf, !is.na(gender)),
+      geom = 'boxplot') +
+  coord_cartesian(ylim = c(0, 500) )
+
+by(pf$friendships_initiated, pf$gender, summary)
+```
+
+
+## Getting Local
+```{r}
+summary(pf$mobile_likes)
+# > summary(pf$mobile_likes)
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#     0.0     0.0     4.0   106.1    46.0 25110.0 
+
+## The median is 4.0, lo que significa que tenemos muchos '0' en el data set.
+
+summary(pf$mobile_likes > 0)
+# > summary(pf$mobile_likes > 0)
+#    Mode   FALSE    TRUE    NA's 
+# logical   35056   63947       0
+
+mobile_check_in = NA
+pf$mobile_check_in = ifelse(pf$mobile_likes > 0, 1, 0)
+pf$mobile_check_in = factor(pf$mobile_check_in)       ## Convert to a factor variable
+summary(pf$mobile_check_in)
+# > summary(pf$mobile_check_in)
+#     0     1 
+# 35056 63947
+
+## 63947 personas han usado el movil.
+```
+
+What percent of check in using mobile?
+```{r}
+sum(pf$mobile_check_in == 1) / length(pf$mobile_check_in)
+#   > sum(pf$mobile_check_in == 1) / length(pf$mobile_check_in)
+# [1] 0.6459097
+  
+## The answer is: ~= 65%
+```
+
+
+
+  
+
+
+________________________________________________________________________________________
+# Apuntes:
+==========
+Cuando en un data set hay variables que en ciertas observaciones cobran valores sin sentido, realizar el siguiente proceso para eliminar dichas observaciones.
+
+### En la grafica puede verse como algunos usuarios de facebook "tienen" alrededor de años. Por lo que se deduce que han mentido al insertar la edad. Para saber kienes han mentido:
+pf[pf$age >= 90, ]
+
+### Eliminar esos usuarios de facebook de la grafica xq son datos inservibles:
+### 1. Obtener en que posición (indice) del data frame originalestan.
+liers = which(pf$age >= 90)
+### 2. Actualizar el valor del data set.
+pf = pf[-liers, ]
+### 3. Plotear valores ,as lógicos.
+pf = subset(pf, select = -subset(pf, age >= 90) )
+qplot(x = age, data = pf, binwidth = 1,
+      color = I('black'), fill = I('#800080') ) + 
+  scale_x_continuous(breaks = seq(0, 113, 5) )
+
+________________________________________________________________________________________
+# Referencias:
+==============
+
+## Teoria para plotear Histogramas:
+[How to Read Histograms and Use Them in R](http://flowingdata.com/2014/02/27/how-to-read-histograms-and-use-them-in-r/)
+
+## Teoria para dividir el data set
+[Facets - ggplot2](http://www.cookbook-r.com/Graphs/Facets_(ggplot2)/)
+
+## Ajustar plots con ggplot
+[Continuous position scales (x & y)](http://docs.ggplot2.org/current/scale_continuous.html)
+
+## Cambiar el tema con ggplot. [cambiar color del grafico]
+[ggplot theme documentation](http://docs.ggplot2.org/0.9.2.1/theme.html)
+[web-colors hexadecimal](http://en.wikipedia.org/wiki/Web_colors)
+
+## ggplot2 - Multiple Plots in One Graph Using gridExtra
+http://lightonphiri.org/blog/ggplot2-multiple-plots-in-one-graph-using-gridextra
+
+
+## LOG TRANSFORMATIONS FOR SKEWED AND WIDE DISTRIBUTIONS
+http://www.r-statistics.com/2013/05/log-transformations-for-skewed-and-wide-distributions-from-practical-data-science-with-r/
+
+## Continuous position scales (x & y).
+http://docs.ggplot2.org/current/scale_continuous.html
+
+## Box Plot
+http://en.wikipedia.org/wiki/File:Boxplot_vs_PDF.svg
+http://flowingdata.com/2008/02/15/how-to-read-and-use-a-box-and-whisker-plot/
+http://en.wikipedia.org/wiki/Interquartile_range
+
+
+```{r fig.width=7, fig.height=6}
+plot(cars)
+```
+
